@@ -66,6 +66,12 @@ def clean(b,wx):
         for k in ["nav","menu","sidebar","footer","header","bread","crumb"]:
             b = re.sub(rf'<div[^>]*class="[^"]*{k}[^"]*"[^>]*>[\s\S]*?</div>',"",b,flags=re.I)
         b = re.sub(r"<!--.*?-->","",b,flags=re.DOTALL)
+        # Strip lazy load: replace src with data-src, remove lazy attributes
+        b = re.sub(r'<img([^>]*)src="[^"]*"([^>]*)data-src="([^"]+)"([^>]*)>',r'<img\1src="\3"\2\4>',b)
+        b = re.sub(r'\s+data-lazy-type="[^"]*"',"",b)
+        b = re.sub(r'\s+class="lazy[^"]*"',' class="wp-image"',b)
+        b = re.sub(r'\s+data-src="[^"]*"',"",b)
+        b = re.sub(r'<noscript>[\s\S]*?</noscript>',"",b,flags=re.I)
     b = re.sub(r"<span[^>]*>\s*</span>","",b); b = re.sub(r"<p>\s*</p>","",b)
     return b.strip()
 
@@ -120,6 +126,7 @@ def wp(title,b,imgs,u,wx):
             except: pass
     c = b
     for o,n in um.items(): c=c.replace(f'"{o}"',f'"{n}"')
+    c = re.sub(r'<img ', '<img data-no-lazy=1 ', c)
     wpc = f'<blockquote><p>{MSG["src"]}: <a href="{u}">{u}</a></p></blockquote>\n<div style="font-size:14px;line-height:1.7">\n{c}\n</div>\n<hr>\n<blockquote><p style="color:#888;font-size:13px;margin:0">{MSG["foot"]} | <a href="{u}">{MSG["src"]}</a></p></blockquote>'
     slug = safe(title).lower()[:50].replace("_","-")
     post = json.loads(urllib.request.urlopen(urllib.request.Request(WP_API+"/posts",data=json.dumps({"title":title,"content":wpc,"status":"draft","categories":[10],"slug":slug}).encode(),headers={**hd,"Content-Type":"application/json"},method="POST"),timeout=30).read().decode())
