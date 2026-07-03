@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """archive_wechat.py - Web/WeChat article archiver."""
 import os, sys, re, json, base64, urllib.request, html as html_mod, urllib.parse
 from datetime import datetime; from pathlib import Path
@@ -19,7 +19,7 @@ def dec(data):
         except: continue
     return data.decode("utf-8",errors="replace")
 
-def safe(s,m=60): return re.sub(r'[\\\\/:*?"<>|]',"_",s)[:m]
+def safe(s,m=60): return re.sub(r'[\\/:*?"<>|]',"_",s)[:m]
 def ext(url,ct=""):
     for k,v in [("wx_fmt=jpeg","jpg"),("wx_fmt=png","png"),("wx_fmt=gif","gif")]:
         if k in url or k in ct: return v
@@ -128,10 +128,21 @@ def wp(title,b,imgs,u,wx):
 
 def main():
     import argparse
-    ap = argparse.ArgumentParser(); ap.add_argument("url"); ap.add_argument("--wp",action="store_true"); ap.add_argument("--output","-o")
+    ap = argparse.ArgumentParser()
+    ap.add_argument("url", nargs="?")
+    ap.add_argument("--html-file", help="Pre-fetched HTML file path (skip network fetch)")
+    ap.add_argument("--wp", action="store_true")
+    ap.add_argument("--output", "-o")
     a = ap.parse_args()
-    print(f"{MSG['dl']}: {a.url}")
-    raw = fetch(a.url); htm = dec(raw); wx = "mp.weixin.qq.com" in a.url
+    if a.html_file:
+        print(f"Reading HTML from: {a.html_file}")
+        raw = open(a.html_file, "rb").read()
+        htm = dec(raw)
+    else:
+        print(f"{MSG['dl']}: {a.url}")
+        raw = fetch(a.url)
+        htm = dec(raw)
+    wx = "mp.weixin.qq.com" in a.url
     t = title(htm).replace("\ufffd","").replace("\xa0"," ").strip(); print(f"  {t[:80]}")
     b,_ = body(htm,a.url); b = clean(b,wx).replace("\ufffd","").replace("\xa0"," ")
     if not wx: b = absurl(b,a.url)
