@@ -1,0 +1,3 @@
+﻿display_name: WeChat/Web Article Archiver
+short_description: Archive articles (WeChat + web) to HTML + images, with optional WordPress publishing
+default_prompt: Archive this article and download all images
