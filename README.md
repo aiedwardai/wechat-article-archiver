@@ -30,3 +30,9 @@ See SKILL.md for detailed documentation of all lessons learned from production u
 ## License
 
 MIT
+
+## New in latest version
+
+- **Lazy load handling**: Automatically strips a3 Lazy Load / WP Rocket lazy attributes (data-src, noscript, etc.) from source articles
+- **--html-file flag**: Pre-fetch pages that block urllib (like Baidu Baike) with curl, then archive from local file
+- **data-no-lazy**: Adds skip-lazy hints to prevent WP-side lazy load interference

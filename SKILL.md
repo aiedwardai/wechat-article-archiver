@@ -74,3 +74,29 @@ archive_YYYYMMDD_HHMM_title/
 | SKILL.md | Codex skill instructions |
 | scripts/archive_wechat.py | Core archiving script |
 | agents/openai.yaml | UI metadata |
+
+### 8. Lazy load image handling (a3 Lazy Load pattern)
+Many WordPress sites (e.g., bjshanshang.com) use the a3 Lazy Load plugin which replaces <img src="..."> with:
+html
+<img src="//example.com/lazy_placeholder.gif" data-lazy-type="image"
+     data-src="https://real-image-url.jpg" class="lazy lazy-hidden" />
+<noscript><img src="https://real-image-url.jpg" ... /></noscript>
+
+
+**Always strip these before processing:**
+- Replace src with the data-src value
+- Remove data-lazy-type, class="lazy lazy-hidden", data-src attributes
+- Delete <noscript> blocks (they contain the fallback image)
+- Otherwise dlimgs() will download the placeholder gif instead of the real image
+
+### 9. Sites blocking urllib
+Some sites (Baidu Baike, certain CDN-protected sites) return 403 to Python's urllib. Use curl to fetch first, then pass the saved HTML:
+ash
+curl -s -L -o page.html "https://baike.baidu.com/item/..."
+python scripts/archive_wechat.py "https://..." --html-file page.html --wp
+
+The --html-file flag skips the fetch step and reads from the local file.
+
+### 10. WordPress lazy load plugin interference
+Even after publishing clean images to WordPress, the WP site's own lazy load plugin may re-add data-src attributes at render time.
+The script adds data-no-lazy="1" to all <img> tags as a hint, but some plugins (e.g., WP Rocket, a3 Lazy Load) may still override. Check the rendered post content if images don't appear.
