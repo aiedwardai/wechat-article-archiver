@@ -114,7 +114,7 @@ def wp(title,b,imgs,u,wx):
     if not WP_PASS: return None
     ah = "Basic "+base64.b64encode(f"{WP_USER}:{WP_PASS}".encode()).decode()
     hd = {"Authorization":ah,"User-Agent":"WA-Archiver"}
-    um = {}
+    um = {}; first_media = None
     if imgs:
         for old,fn,p in imgs:
             try:
@@ -123,13 +123,18 @@ def wp(title,b,imgs,u,wx):
                 pl = b"--"+bn.encode()+b'\r\nContent-Disposition: form-data; name="file"; filename="'+fn.encode()+b'"\r\nContent-Type: image/jpeg\r\n\r\n'+d+b"\r\n--"+bn.encode()+b"--\r\n"
                 media = json.loads(urllib.request.urlopen(urllib.request.Request(WP_API+"/media",data=pl,headers={**hd,"Content-Type":"multipart/form-data; boundary="+bn},method="POST"),timeout=60).read().decode())
                 wu = media.get("source_url") or media["guid"]["rendered"]; um[old]=wu
+                if first_media is None: first_media = media["id"]
             except: pass
     c = b
     for o,n in um.items(): c=c.replace(f'"{o}"',f'"{n}"')
     c = re.sub(r'<img ', '<img data-no-lazy=1 ', c)
     wpc = f'<blockquote><p>{MSG["src"]}: <a href="{u}">{u}</a></p></blockquote>\n<div style="font-size:14px;line-height:1.7">\n{c}\n</div>\n<hr>\n<blockquote><p style="color:#888;font-size:13px;margin:0">{MSG["foot"]} | <a href="{u}">{MSG["src"]}</a></p></blockquote>'
     slug = safe(title).lower()[:50].replace("_","-")
-    post = json.loads(urllib.request.urlopen(urllib.request.Request(WP_API+"/posts",data=json.dumps({"title":title,"content":wpc,"status":"draft","categories":[10],"slug":slug}).encode(),headers={**hd,"Content-Type":"application/json"},method="POST"),timeout=30).read().decode())
+    post_data = {"title":title,"content":wpc,"status":"draft","categories":[10],"slug":slug}
+    if first_media: post_data["featured_media"] = first_media
+    m3 = re.search(r"<p>([^<]{30,200})</p>", c)
+    if m3: post_data["excerpt"] = re.sub(r"<[^>]+>", "", m3.group(1)).strip()
+    post = json.loads(urllib.request.urlopen(urllib.request.Request(WP_API+"/posts",data=json.dumps(post_data).encode(),headers={**hd,"Content-Type":"application/json"},method="POST"),timeout=30).read().decode())
     urllib.request.urlopen(urllib.request.Request(WP_API+f"/posts/{post['id']}",data=json.dumps({"content":wpc,"status":"publish"}).encode(),headers={**hd,"Content-Type":"application/json"},method="POST"),timeout=30).read()
     return post["link"]
 
